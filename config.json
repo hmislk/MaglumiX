@@ -1,0 +1,27 @@
+{
+    "analyzerDetails": {
+        "analyzerName": "SmartLytePlus",
+        "serialNumber": "12345-67890",
+        "analyzerId": "yourAnalyzerId",
+        "analyzerIP": "172.16.241.70",
+        "analyzerPort": 8080,
+        "hostPort": 80,
+        "hostIp": "172.16.241.71",
+        "communicationType": "TCP/IP",
+        "socketCommunicationType": "Client",
+        "resultSendingCriteria": "Sample",
+        "automaticResultSending": "Yes",
+        "hostQueryInUse": "Yes",
+        "multipleHostQuery": "No",
+        "sampleIdSendingDelay": "0",
+        "resultSendingDelay": "0",
+        "qcResultSendingInUse": "Yes",
+        "departmentAnalyzerId": "yourDepartmentAnalyzerId",
+        "departmentId": "yourDepartmentId"
+    },
+    "limsSettings": {
+        "limsServerBaseUrl": "http://192.168.181.101:8080/sethma/api/middleware",
+        "username": "buddhika",
+        "password": "Buddhika123@"
+    }
+}
