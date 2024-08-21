@@ -1,8 +1,8 @@
 {
     "analyzerDetails": {
-        "analyzerName": "SmartLytePlus",
+        "analyzerName": "MaglumiX3",
         "serialNumber": "12345-67890",
-        "analyzerId": "yourAnalyzerId",
+        "analyzerId": "12",
         "analyzerIP": "172.16.241.70",
         "analyzerPort": 8080,
         "hostPort": 80,

@@ -1,40 +1,67 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://www.w3.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.carecode</groupId>
     <artifactId>MaglumiX</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+    
     <dependencies>
+        <!-- Google Gson -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.8.9</version>
-            <type>jar</type>
         </dependency>
-        
+
+        <!-- HAPI HL7 v2.x Base Library -->
         <dependency>
-	    <groupId>com.github.hmislk</groupId>
-	    <artifactId>lims-middleware-libraries</artifactId>
-	    <version>1.1.1</version>
-	</dependency>
+            <groupId>ca.uhn.hapi</groupId>
+            <artifactId>hapi-base</artifactId>
+            <version>2.3</version>
+        </dependency>
+
+        <!-- HAPI HL7 v2.5.1 Structures -->
+        <dependency>
+            <groupId>ca.uhn.hapi</groupId>
+            <artifactId>hapi-structures-v251</artifactId>
+            <version>2.3</version>
+        </dependency>
+
+        <!-- Log4J 2 for Logging -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>2.17.0</version>
         </dependency>
+
+        <!-- Custom LIMS Middleware Libraries from CareCode -->
+        <dependency>
+            <groupId>com.github.hmislk</groupId>
+            <artifactId>lims-middleware-libraries</artifactId>
+            <version>1.1.1</version>
+        </dependency>
     </dependencies>
+
+
     <repositories>
+        <!-- Official Maven Repository for HAPI (Maven Central should be first) -->
+        <repository>
+            <id>hapi-repo</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+
+        <!-- JitPack Repository for CareCode Libraries -->
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
     </repositories>
+    
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <exec.mainClass>com.carecode.smartlyteplusmiddleware.SmartLytePlusMiddleware</exec.mainClass>
     </properties>
+    
     <name>MaglumiX</name>
 </project>

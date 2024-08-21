@@ -6,20 +6,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.Logger;
-import org.carecode.lims.libraries.PatientDataBundle;
 import org.carecode.lims.libraries.ResultsRecord;
 import org.carecode.lims.libraries.PatientRecord;
+import org.carecode.lims.libraries.OrderRecord;
 import org.carecode.lims.libraries.MiddlewareSettings;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import org.carecode.lims.libraries.DataBundle;
 
 public class LISCommunicator {
@@ -33,147 +26,85 @@ public class LISCommunicator {
         this.middlewareSettings = settings;
     }
 
-    public Map<String, String> parseQueryParams(String query) {
-        Map<String, String> params = new HashMap<>();
-        String[] pairs = query.split("&");
-        for (String pair : pairs) {
-            int idx = pair.indexOf("=");
-            if (idx != -1) {
-                params.put(pair.substring(0, idx), pair.substring(idx + 1));
-            }
+    // This method creates a DataBundle from a patient record and a list of orders or results
+    public DataBundle createDataBundle(PatientRecord patientRecord, List<OrderRecord> orders, List<ResultsRecord> results) {
+        DataBundle dataBundle = new DataBundle();
+        dataBundle.setMiddlewareSettings(middlewareSettings);
+        dataBundle.setPatientRecord(patientRecord);
+        
+        // Add order records if present
+        if (orders != null) {
+            dataBundle.getOrderRecords().addAll(orders);
+            logger.info("Order records added: " + orders.size());
         }
-        return params;
-    }
-
-    public Map<String, String> parseIonData(Map<String, String> params, String ion) {
-        Map<String, String> ionData = new HashMap<>();
-        String prefix = "ionData[" + ion + "]";
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            if (entry.getKey().startsWith(prefix)) {
-                try {
-                    String keySegment = entry.getKey().substring(entry.getKey().indexOf('['), entry.getKey().lastIndexOf(']') + 1);
-                    String subKey = keySegment.replaceAll("\\[|\\]", "").replace(ion, "").replaceAll("^\\.", "");
-                    if (!subKey.isEmpty()) {
-                        ionData.put(subKey, entry.getValue());
-                    }
-                } catch (StringIndexOutOfBoundsException e) {
-                    logger.error("Error parsing ion data for key: " + entry.getKey(), e);
-                }
-            }
-        }
-        return ionData;
-    }
-
-    // Method to extract ion-specific data
-    public Map<String, String> parseIonData(Map<String, String> params, String ion, boolean otherMethod) {
-        Map<String, String> ionData = new HashMap<>();
-        String prefix = "ionData[" + ion + "]";
-        params.forEach((key, value) -> {
-            if (key.startsWith(prefix)) {
-                try {
-                    String subKey = key.substring(key.indexOf('['), key.lastIndexOf(']') + 1);
-                    subKey = subKey.replaceAll("\\[|\\]", "").replace(ion, "").replaceAll("^\\.", ""); // Remove leading dots if any
-                    if (!subKey.isEmpty()) {
-                        ionData.put(subKey, value);
-                    }
-                } catch (StringIndexOutOfBoundsException e) {
-                    logger.error("Error parsing ion data for key: " + key, e);
-                }
-            }
-        });
-        return ionData;
-    }
-
-    public DataBundle createDataBundleFromParams(Map<String, String> params) {
-        DataBundle pdb = new DataBundle();
-        pdb.setMiddlewareSettings(middlewareSettings);
-        PatientRecord patientRecord = new PatientRecord(
-                0, // Assuming frameNumber as 0
-                params.getOrDefault("pId", "Unknown"), // Default patient ID if not provided
-                null, // additionalId not provided
-                "Unknown Patient", // Default patient name
-                null, // patientSecondName not provided
-                null, // patientSex not provided
-                null, // race not provided
-                null, // dob not provided
-                null, // patientAddress not provided
-                null, // patientPhoneNumber not provided
-                null // attendingDoctor not provided
-        );
-        pdb.setPatientRecord(patientRecord);
-        logger.info("Patient record created for patient ID: " + patientRecord.getPatientId());
-
-        // Decoding URL-encoded keys and rebuilding the map with decoded keys
-        Map<String, String> decodedParams = new HashMap<>();
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            try {
-                String decodedKey = URLDecoder.decode(entry.getKey(), StandardCharsets.UTF_8.name());
-                decodedParams.put(decodedKey, entry.getValue());
-            } catch (Exception e) {
-                logger.error("Error decoding parameter key: " + entry.getKey(), e);
-            }
+        
+        // Add results records if present
+        if (results != null) {
+            dataBundle.getResultsRecords().addAll(results);
+            logger.info("Results records added: " + results.size());
         }
 
-        // List of expected ions based on your data structure
-        String[] expectedIons = {"Na", "K", "Cl", "Ca"};
-        for (String ion : expectedIons) {
-            logger.debug("Checking ion: " + ion);
-            if (decodedParams.containsKey("ionData[" + ion + "][ion]")) {
-                Map<String, String> ionData = parseIonData(decodedParams, ion);
-                if (!ionData.isEmpty()) {
-                    logger.debug("Ion data for " + ion + ": " + ionData);
-                    ResultsRecord resultsRecord = new ResultsRecord(
-                            0, // frameNumber
-                            ion, // Test Code
-                            Double.parseDouble(ionData.getOrDefault("conc", "0")), // Result Value
-                            Double.parseDouble(ionData.getOrDefault("min", "0")), // Minimum Value
-                            Double.parseDouble(ionData.getOrDefault("max", "0")), // Maximum Value
-                            ionData.getOrDefault("flag", ""), // Flag
-                            ionData.getOrDefault("sampleType", ""), // Sample Type
-                            ionData.getOrDefault("strUnits", ""), // Result Units
-                            null, // Result DateTime
-                            null, // Instrument Name
-                            params.get("pId") // Sample ID
-                    );
-                    pdb.getResultsRecords().add(resultsRecord);
-                } else {
-                    logger.warn("No data found for ion: " + ion);
-                }
-            } else {
-                logger.warn("Data for ion " + ion + " is not present in parameters.");
-            }
-        }
-
-        logger.info("Total Result Records Created: " + pdb.getResultsRecords().size());
-        return pdb;
+        logger.info("DataBundle created for patient ID: " + patientRecord.getPatientId());
+        return dataBundle;
     }
 
-    public void pushResults(DataBundle dataBundle) {
+    // This method sends data (either order requests or test results) to the LIS
+    public void sendToLIS(DataBundle dataBundle) {
         try {
-            String pushResultsEndpoint = middlewareSettings.getLimsSettings().getLimsServerBaseUrl() + "/test_results";
-            URL url = new URL(pushResultsEndpoint);
+            String endpointUrl = middlewareSettings.getLimsSettings().getLimsServerBaseUrl() + "/send_data";
+            URL url = new URL(endpointUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
 
+            // Serialize the DataBundle to JSON
             String jsonInputString = gson.toJson(dataBundle);
             try (OutputStream os = conn.getOutputStream()) {
                 byte[] input = jsonInputString.getBytes("utf-8");
                 os.write(input, 0, input.length);
             }
 
+            // Log the response from the server
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
                 String inputLine;
                 StringBuilder response = new StringBuilder();
                 while ((inputLine = in.readLine()) != null) {
                     response.append(inputLine);
                 }
-                logger.info("Response from server: " + response.toString());
+                logger.info("Response from LIS: " + response.toString());
             }
+
         } catch (Exception e) {
-            logger.error("Failed to send results to LIMS", e);
+            logger.error("Failed to send data to LIS", e);
         }
+    }
+
+    // Example method to create a patient record
+    public PatientRecord createPatientRecord(String patientId, String patientName, String patientSex, String dob, String attendingDoctor) {
+        return new PatientRecord(0, patientId, null, patientName, null, patientSex, null, dob, null, null, attendingDoctor);
+    }
+
+    // Example method to create a result record
+    public ResultsRecord createResultsRecord(String testCode, double resultValue, String resultUnits, String sampleId) {
+        return new ResultsRecord(
+                0, // frameNumber
+                testCode, // Test Code
+                resultValue, // Result Value
+                0, // Minimum Value
+                0, // Maximum Value
+                "", // Flag
+                "", // Sample Type
+                resultUnits, // Result Units
+                null, // Result DateTime
+                middlewareSettings.getAnalyzerDetails().getAnalyzerName(), // Instrument Name
+                sampleId // Sample ID
+        );
+    }
+
+    // Example method to create an order record
+    public OrderRecord createOrderRecord(String sampleId, List<String> testNames, String specimenCode, String orderDateTimeStr) {
+        return new OrderRecord(0, sampleId, testNames, specimenCode, orderDateTimeStr, "");
     }
 }
